@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BeamLite — mobilny soft-body car crash</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js" } }
+</script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="rotate-overlay">
+    <div class="phone-icon">📱↻</div>
+    <p>Obróć urządzenie poziomo</p>
+  </div>
+
+  <div id="start-screen">
+    <h1>BEAM<span>LITE</span></h1>
+    <p class="sub">soft-body • realistyczne zderzenia • poligon</p>
+    <button id="btn-start">START</button>
+    <p class="hint">Sterowanie: ◀ ▶ — kierownica, ⛽/🛑 — gaz i hamulec,<br/>
+    klawiatura: WSAD / strzałki / Spacja</p>
+  </div>
+
+  <div id="hud">
+    <div id="speed">
+      <span id="speed-val">0</span><span class="unit">km/h</span>
+      <div id="damage-bar"><div id="damage-fill"></div></div>
+      <span id="damage-label">uszkodzenia 0%</span>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div class="cluster left">
+      <button id="btn-left" class="pad">◀</button>
+      <button id="btn-right" class="pad">▶</button>
+    </div>
+    <div class="cluster right">
+      <button id="btn-hand" class="pad small">P</button>
+      <button id="btn-brake" class="pad">🛑</button>
+      <button id="btn-gas" class="pad">⛽</button>
+    </div>
+  </div>
+
+  <div id="topbar">
+    <button id="btn-cam" class="mini">📷</button>
+    <button id="btn-reset" class="mini">⟲ RESET</button>
+    <button id="btn-sound" class="mini">🔊</button>
+    <button id="btn-full" class="mini">⛶</button>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
