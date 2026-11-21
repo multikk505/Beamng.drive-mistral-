@@ -16,9 +16,10 @@ export class Node {
     this.invM = 1 / mass;
     this.r = radius;
     this.friction = 0.6;      // tarcie styczne przy kontakcie (wsp. prędkości stycznej)
-    this.linearDamp = 0.04;   // tłumienie ogólne [1/s]
+    this.linearDamp = 0.08;   // tłumienie ogólne [1/s]
     this.contactNormal = null;
     this.impact = 0;          // siła uderzenia ostatniego kroku (do efektów)
+    this.lastImpact = 0;      // impact z poprzedniego podkroku (do bramy plastyczności)
   }
 }
 
@@ -54,13 +55,6 @@ export class Beam {
     const strain = (len - this.rest) / this.rest;
     this.strainNow = strain;
 
-    // plastyczność: nadmiar odkształcenia przenosi rest (trwała deformacja)
-    if (this.plastic > 0 && Math.abs(strain) > this.yield) {
-      const over = Math.abs(strain) - this.yield;
-      const pl = Math.min(1, over * (6 + 60 * this.plastic));
-      let nrest = this.rest + (len - this.rest) * Math.min(0.35, pl * this.plastic * dt * 60);
-      this.rest = THREE.MathUtils.clamp(nrest, this.minRest, this.maxRest);
-    }
     if (Math.abs(len - this.rest0) / this.rest0 > this.breakStrain) {
       this.broken = true;
       return;
@@ -72,6 +66,18 @@ export class Beam {
     _relV.subVectors(b.v, a.v);
     const vAlong = _relV.dot(_dir);
     const force = spring + this.damp * vAlong;
+
+    // plastyczność WYŁĄCZNIE przy zgnieceniu: belka musi się gwałtownie
+    // skracać/wydłużać (uderzenie) albo być ściśnięta ponad granicę geometryczną.
+    // Dzięki rezonans zawieszenia czy podskoki kół nigdy nie deformują auta
+    const crushing = Math.abs(vAlong) > 2 || Math.abs(strain) > 0.25;
+    if (this.plastic > 0 && crushing && Math.abs(strain) > this.yield) {
+      const over = Math.abs(strain) - this.yield;
+      const pl = Math.min(1, over * (6 + 60 * this.plastic));
+      const rate = Math.min(0.6, pl * this.plastic * 0.5);
+      const nrest = this.rest + (len - this.rest) * rate;
+      this.rest = THREE.MathUtils.clamp(nrest, this.minRest, this.maxRest);
+    }
 
     if (a.m > 0) {
       a.f.addScaledVector(_dir, force);
@@ -88,7 +94,7 @@ export class SoftBody {
     this.beams = beams;
     this.spawn = nodes.map(n => n.p.clone());
     this.gravity = -9.81;
-    this.substeps = 6;
+    this.substeps = 10;
   }
 
   reset() {
@@ -98,6 +104,9 @@ export class SoftBody {
       n.v.set(0, 0, 0);
       n.f.set(0, 0, 0);
       n.impact = 0;
+      n.lastImpact = 0;
+      n.contactNormal = null;
+      n.contactDepth = 0;
     }
     for (const b of this.beams) {
       b.rest = b.rest0;
@@ -108,6 +117,7 @@ export class SoftBody {
 
   collectNodeForces(contactBodies, colliders, dt) {
     for (const n of this.nodes) {
+      n.lastImpact = n.impact;
       n.f.set(0, this.gravity * n.m, 0);
       n.f.addScaledVector(n.v, -n.linearDamp * n.m);
       n.impact = 0;
@@ -160,14 +170,14 @@ export class SoftBody {
   }
 }
 
-function pushNode(n, normal, depth, dt) {
-  n.p.addScaledVector(normal, depth);
+function pushNode(n, normal, depth, dt, e = 0.15, f = 1) {
+  n.p.addScaledVector(normal, depth * f);
   n.contactDepth = Math.max(n.contactDepth || 0, depth);
   const vn = n.v.dot(normal);
   n.impact = Math.max(n.impact, -vn);
   if (vn < 0) {
-    // restytucja ~0.15, tarcie styczne skalowane krokiem czasowym
-    n.v.addScaledVector(normal, -vn * 1.15);
+    // restytucja e, tarcie styczne skalowane krokiem czasowym
+    n.v.addScaledVector(normal, -vn * (1 + e));
     _tmp2.copy(n.v).addScaledVector(normal, -n.v.dot(normal));
     const mu = Math.min(1, n.friction * dt * 60);
     n.v.addScaledVector(_tmp2, -mu);
@@ -176,6 +186,7 @@ function pushNode(n, normal, depth, dt) {
 }
 
 export function sphereVsOBB(n, box, dt) {
+  void 0;
   _invQuat.copy(box.quat).invert();
   _local.copy(n.p).sub(box.pos).applyQuaternion(_invQuat);
   const hx = box.hx, hy = box.hy, hz = box.hz;
@@ -199,7 +210,9 @@ export function sphereVsOBB(n, box, dt) {
     else { nx = 0; ny = 0; nz = Math.sign(_local.z) || 1; depth = pzn + n.r; }
   }
   _tmp.set(nx, ny, nz).applyQuaternion(box.quat);
-  pushNode(n, _tmp.normalize(), Math.max(depth, 0), dt);
+  // miękkie zgniatanie: wypychamy tylko część głębokości na podkrok,
+  // reszta energii idzie w belki (trwała deformacja)
+  pushNode(n, _tmp.normalize(), Math.max(depth, 0), dt, 0.25, 0.5);
 }
 
 export function nodeNodeBodies(A, B, radiusScale = 1) {

@@ -18,6 +18,16 @@ każdym hostingu statycznym (m.in. GitHub Pages). Na telefonie otwórz przez HTT
 
 ## Funkcje
 
+- **Większa mapa z drogami** — arena 300 × 300 m na terenie 800 × 800 m: bulwar, aleje,
+  ulice boczne, plac manewrowy (beton), oznakowanie poziome (krawędzie + przerywana linia).
+- **Łatwiejsze prowadzenie** — wyższa przyczepność (okrąg tarcia 1.55), szybsza i szerzej
+  skrętna kierownica, silniejsze hamulce; stabilna integracja (10 podkroków/klatkę).
+- **Uszkodzenia tylko od kolizji** — plastyczność belek działa wyłącznie przy zgnieceniu
+  (duża prędkość zgniatania albo odkształcenie ponad granicę geometryczną): jazda, skoki
+  i hamowanie nie deformują auta losowo; zderzenie ze ścianą przy ~125 km/h daje ~55%
+  trwałych odkształceń przodu.
+- **Ładniejsze modele** — nowa sylwetka nadwozia z łukami nadkoli, węższe szyby, koła
+  typu torus z felgami, piastami i ramionami, metaliczny lakier.
 - **Tryb poziomy** — nakładka „obróć urządzenie”, pełny ekran + próba `orientation.lock('landscape')`.
 - **Sterowanie dotykowe** — kierownica (◀ ▶), gaz / hamulec / hamulec ręczny, multi-touch;
   na desktopie WSAD / strzałki / Spacja.
@@ -27,6 +37,8 @@ każdym hostingu statycznym (m.in. GitHub Pages). Na telefonie otwórz przez HTT
   zawieszenie na własnych belkach (pochylenie nadwozia, przysiad przy hamowaniu).
 - **Poligon** — ściana crash-testowa, drugie auto soft-body do zderzenia czołowego,
   rampa do skoków, slalom ze stożkami, słupki, otoczenie z cieniami.
+- **Wersja offline** — `npm run build` tworzy `dist/BeamLite.html` (jeden plik ~550 KB
+  z wbudowanym three.js; otwórz na telefonie bez żadnego hostingu).
 - **HUD** — prędkość km/h, pasek % uszkodzeń (suma trwałych odkształceń belek), 2 tryby kamery,
   dźwięk silnika (Web Audio, modulowany obrotami) + szum uderzeń, trzęsienie kamery przy crashu.
 
@@ -37,12 +49,13 @@ index.html          – ekran startowy, HUD, przyciski dotykowe, importmap
 css/style.css       – UI mobile-first (landscape overlay, kontrolki)
 js/softbody.js      – rdzeń fizyki: Node, Beam (plastyczność/zrywanie), kolizje OBB i node-node
 js/vehicle.js       – auto: layout węzłów, belki, zawieszenie, model opon, geometria + skinning
-js/environment.js   – poligon, tekstura asfaltu, przeszkody (OBB), rampa, drzewa
+js/environment.js   – mapa z drogami, tekstury proceduralne, przeszkody (OBB), rampa, drzewa
 js/controls.js      – multi-touch + klawiatura
 js/audio.js         – silnik i efekty dźwiękowe (Web Audio)
 js/main.js          – scena, światła, kamery, pętla gry
 vendor/three/       – three.js (offline)
-tests/smoke.mjs     – test dymny fizyki (jazda / crash / reset / skręt) w Node.js
+tests/smoke.mjs     – test dymny fizyki (jazda / brak losowych uszkodzeń / crash / reset / skręt)
+tools/build-standalone.mjs – build wersji offline (dist/BeamLite.html)
 ```
 
 ## Test fizyki
