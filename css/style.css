@@ -1,0 +1,112 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #0b0e14;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #e8eaee;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---------- nakładka "obracaj poziomo" ---------- */
+#rotate-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: #0b0e14;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; font-size: 20px;
+}
+#rotate-overlay .phone-icon { font-size: 56px; animation: spin 1.6s ease-in-out infinite; }
+@keyframes spin { 0%, 40% { transform: rotate(0); } 60%, 100% { transform: rotate(90deg); } }
+
+@media (orientation: portrait) {
+  #rotate-overlay { display: flex; }
+}
+
+/* ---------- ekran startowy ---------- */
+#start-screen {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; text-align: center;
+  background: radial-gradient(ellipse at center, #16202e 0%, #05070b 100%);
+}
+#start-screen h1 {
+  font-size: clamp(40px, 9vw, 76px);
+  letter-spacing: 6px; font-weight: 800;
+}
+#start-screen h1 span { color: #e63946; }
+#start-screen .sub { color: #8b95a5; letter-spacing: 2px; font-size: 14px; }
+#btn-start {
+  margin-top: 10px;
+  padding: 16px 66px;
+  font-size: 26px; font-weight: 700; letter-spacing: 4px;
+  color: #fff; background: #e63946;
+  border: none; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(230, 57, 70, .45);
+  cursor: pointer;
+}
+#btn-start:active { transform: scale(.96); }
+#start-screen .hint { color: #5d6774; font-size: 13px; line-height: 1.6; }
+
+/* ---------- HUD ---------- */
+#hud {
+  position: fixed; top: 10px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  text-align: center;
+  pointer-events: none;
+}
+#speed { display: flex; align-items: baseline; gap: 6px; justify-content: center; }
+#speed-val { font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+#speed .unit { color: #8b95a5; font-size: 14px; }
+#damage-bar {
+  width: 130px; height: 6px;
+  background: rgba(255,255,255,.14);
+  border-radius: 3px; margin: 4px auto 2px; overflow: hidden;
+}
+#damage-fill { height: 100%; width: 0%; background: #2ecc71; border-radius: 3px; transition: width .2s; }
+#damage-label { font-size: 11px; color: #8b95a5; }
+
+/* ---------- przyciski ---------- */
+#controls { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.cluster { position: absolute; bottom: 18px; display: flex; gap: 12px; align-items: flex-end; pointer-events: none; }
+.cluster.left { left: 18px; }
+.cluster.right { right: 18px; flex-direction: row; }
+
+.pad {
+  pointer-events: auto;
+  width: 76px; height: 76px;
+  font-size: 26px;
+  color: #dfe4ea;
+  background: rgba(20, 26, 36, .55);
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 18px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  touch-action: none;
+}
+.pad.small { width: 52px; height: 52px; font-size: 18px; align-self: flex-end; }
+.pad.pressed { background: rgba(230, 57, 70, .65); border-color: #e63946; }
+
+#topbar {
+  position: fixed; top: 10px; right: 10px; z-index: 30;
+  display: flex; gap: 8px;
+}
+.mini {
+  padding: 8px 12px; font-size: 14px;
+  color: #dfe4ea;
+  background: rgba(20, 26, 36, .55);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.mini:active { background: rgba(230,57,70,.6); }
