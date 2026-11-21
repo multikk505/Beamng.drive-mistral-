@@ -5,19 +5,32 @@ import { SoftBody } from './softbody.js';
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
 /* Trasy punktów zarysu bocznego (z, y, połszerokość, materiał odcinka).
-   Materiały: 0 lakier, 1 szkło, 2 ciemny plastik. Pętla zamknięta (P10 -> P0 = podłoga). */
+   Materiały: 0 lakier, 1 szkło, 2 ciemny plastik. Pętla zamknięta; dół
+   wraca od tyłu do przodu z łukami nadkoli nad kołami (z = ±1.6 / ∓1.45). */
 const OUTLINE = [
-  [2.30, 0.50, 0.70, 2],
-  [2.36, 0.62, 0.74, 2],
-  [2.28, 0.88, 0.74, 0],
-  [1.55, 0.98, 0.78, 0],
-  [1.05, 1.04, 0.78, 1],
-  [0.45, 1.46, 0.64, 1],
-  [-0.55, 1.50, 0.64, 1],
-  [-1.35, 1.12, 0.68, 1],
-  [-2.10, 1.02, 0.72, 2],
-  [-2.30, 0.78, 0.74, 2],
-  [-2.30, 0.50, 0.70, 2],
+  [2.32, 0.46, 0.70, 2],   // przód – dolna warga zderzaka
+  [2.38, 0.58, 0.74, 2],   // zderzak
+  [2.30, 0.82, 0.74, 0],   // pas reflektorów
+  [2.05, 0.94, 0.74, 0],   // przód maski
+  [1.50, 1.00, 0.78, 0],   // maska
+  [1.02, 1.08, 0.78, 1],   // podstawa szyby
+  [0.42, 1.48, 0.64, 1],   // góra wycieraczek... przedni słupek
+  [-0.50, 1.52, 0.64, 1],  // dach
+  [-1.32, 1.14, 0.68, 1],  // tylna szyba – podstawa
+  [-2.05, 1.04, 0.72, 2],  // pokrywa bagażnika
+  [-2.26, 0.88, 0.74, 2],
+  [-2.32, 0.70, 0.74, 2],   // tylny zderzak
+  [-2.28, 0.48, 0.70, 2],
+  [-1.98, 0.48, 0.76, 2],
+  [-1.82, 0.74, 0.82, 2],  // wejście w łuk nadkola
+  [-1.45, 0.90, 0.84, 2],  // szczyt łuku (tył)
+  [-1.08, 0.74, 0.82, 2],
+  [-0.60, 0.50, 0.76, 2],  // próg
+  [0.40, 0.48, 0.76, 2],
+  [0.90, 0.50, 0.76, 2],
+  [1.25, 0.74, 0.82, 2],   // wejście w przedni łuk
+  [1.60, 0.90, 0.84, 2],   // szczyt łuku (przód)
+  [2.02, 0.74, 0.82, 2],
 ].
 
   map(p => ({ z: p[0], y: p[1], w: p[2], m: p[3] }));
@@ -25,12 +38,12 @@ const OUTLINE = [
 export const TIRES = {
   radius: 0.34,
   groundK: 150000,
-  groundDamp: 2600,
-  grip: 1.25,
-  latGrip: 5200,
-  brakeForce: 6200,
-  driveForce: 5600,
-  maxSpeed: 52,
+  groundDamp: 3600,
+  grip: 1.55,          // wyższa przyczepność = łatwiejsze prowadzenie
+  latGrip: 6400,       // szybsza reakcja na skręt
+  brakeForce: 7800,
+  driveForce: 6400,
+  maxSpeed: 55,
   rollResist: 22,
 };
 
@@ -116,16 +129,16 @@ export class Vehicle {
         if (d > 3.2 || d < 0.4) continue;
         const bothFrame = nodes[i].zone === 'frame' && nodes[j].zone === 'frame';
         const beam = bothFrame
-          ? new Beam(nodes[i], nodes[j], 110000, 220, 0.5, 0.045)
-          : new Beam(nodes[i], nodes[j], 55000, 130, 0.7, 0.035);
+          ? new Beam(nodes[i], nodes[j], 110000, 220, 0.5, 0.05)
+          : new Beam(nodes[i], nodes[j], 55000, 180, 0.7, 0.045);
         this.beams.push(beam);
       }
     }
     // zawieszenie: 3 belki na koło (poprzeczna, wzdłużna, pionowy amortyzator)
     const susp = (w, side, mid, tower) => {
-      this.beams.push(Object.assign(new Beam(w, side, 60000, 500, 0.08, 0.4), { susp: true }));
-      this.beams.push(Object.assign(new Beam(w, mid, 30000, 350, 0.08, 0.4), { susp: true }));
-      this.beams.push(Object.assign(new Beam(w, tower, 75000, 1100, 0.08, 0.4), { susp: true }));
+      this.beams.push(Object.assign(new Beam(w, side, 60000, 700, 0.08, 0.4), { susp: true }));
+      this.beams.push(Object.assign(new Beam(w, mid, 30000, 450, 0.08, 0.4), { susp: true }));
+      this.beams.push(Object.assign(new Beam(w, tower, 75000, 1500, 0.08, 0.4), { susp: true }));
     };
     susp(this.wFL, this.nFL, this.nMR, this.nCowlL);
     susp(this.wFR, this.nFR, this.nML, this.nCowlR);
@@ -165,10 +178,10 @@ export class Vehicle {
       }
     }
 
-    // kierownica: ograniczenie kąta rośnie z prędkością
-    const maxSteer = 0.62 / (1 + speed * 0.028);
+    // kierownica: szerszy kąt, wolniejsze usztywnianie z prędkością, szybsza reakcja
+    const maxSteer = 0.70 / (1 + speed * 0.018);
     this.steerTarget = THREE.MathUtils.clamp(this.control.steer, -1, 1) * maxSteer;
-    const rate = 5.5 + 4 * (1 - Math.min(1, speed / 30));
+    const rate = 9 + 5 * (1 - Math.min(1, speed / 30));
     this.steer += THREE.MathUtils.clamp(this.steerTarget - this.steer, -rate * dt, rate * dt);
 
     const t = TIRES;
@@ -294,24 +307,27 @@ export class Vehicle {
     addDetail(_box(0.2, 0.12, 0.08), this.color.getHex(), 0.92, 1.02, 0.95);
     addDetail(_box(0.2, 0.12, 0.08), this.color.getHex(), -0.92, 1.02, 0.95);
 
-    // koła
+    // koła: opona (torus) + felga z ramionami i piastą
     this.wheelMeshes = [];
-    const tireGeo = new THREE.CylinderGeometry(TIRES.radius, TIRES.radius, 0.26, 18);
-    tireGeo.rotateZ(Math.PI / 2);
-    const rimGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.27, 12);
+    const tireGeo = new THREE.TorusGeometry(TIRES.radius - 0.10, 0.105, 10, 20);
+    tireGeo.rotateY(Math.PI / 2); // oś obrotu wzdłuż X
+    const rimGeo = new THREE.CylinderGeometry(0.225, 0.225, 0.20, 16);
     rimGeo.rotateZ(Math.PI / 2);
-    const tireMat = new THREE.MeshStandardMaterial({ color: 0x121212, roughness: 0.92, metalness: 0.05 });
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0xd6d9de, roughness: 0.3, metalness: 0.85 });
-    const spokeGeo = _box(0.29, 0.34, 0.05);
+    const hubGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.26, 10);
+    hubGeo.rotateZ(Math.PI / 2);
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0f, roughness: 0.95, metalness: 0.03 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xdfe3ea, roughness: 0.22, metalness: 0.9 });
+    const spokeGeo = _box(0.28, 0.40, 0.055);
     for (const w of this.wheels) {
       const g = new THREE.Group();
       const tire = new THREE.Mesh(tireGeo, tireMat);
       tire.castShadow = true;
       const rim = new THREE.Mesh(rimGeo, rimMat);
-      g.add(tire, rim);
-      for (let i = 0; i < 5; i++) {
+      const hub = new THREE.Mesh(hubGeo, rimMat);
+      g.add(tire, rim, hub);
+      for (let i = 0; i < 6; i++) {
         const sp = new THREE.Mesh(spokeGeo, rimMat);
-        sp.rotation.x = (i / 5) * Math.PI * 2;
+        sp.rotation.x = (i / 6) * Math.PI * 2;
         g.add(sp);
       }
       this.root.add(g);
@@ -322,7 +338,7 @@ export class Vehicle {
   get bodyMaterial() {
     if (!this._bodyMat) {
       this._bodyMat = new THREE.MeshStandardMaterial({
-        vertexColors: true, metalness: 0.55, roughness: 0.34, flatShading: true,
+        vertexColors: true, metalness: 0.65, roughness: 0.28, flatShading: true,
       });
     }
     return this._bodyMat;

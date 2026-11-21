@@ -15,9 +15,9 @@ renderer.toneMappingExposure = 1.05;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9db8d2);
-scene.fog = new THREE.Fog(0x9db8d2, 90, 220);
+scene.fog = new THREE.Fog(0x9db8d2, 120, 420);
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.2, 500);
+const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.2, 800);
 
 // światła
 const hemi = new THREE.HemisphereLight(0xcfe3f7, 0x4a5238, 0.9);
@@ -34,13 +34,14 @@ scene.add(sun, sun.target);
 
 const { colliders } = buildWorld(scene);
 
-// auta – gracz jedzie w stronę (-Z): ciężarówka-crash test, potem ściana
+// auta – start na placu manewrowym; gracz jedzie bulwarem na południe (-Z):
+// auto do zderzenia czołowego, dalej rampa/ulice, na końcu ściana crash-testu
 const car = new Vehicle(scene, { color: 0xc62828 });
-car.setSpawn(0, 30, Math.PI);
+car.setSpawn(3, 70, Math.PI);
 car.control = { throttle: 0, brake: 0, steer: 0, handbrake: 0 };
 
 const parked = new Vehicle(scene, { color: 0x2d6cb5 });
-parked.setSpawn(0, -10, 0);
+parked.setSpawn(-3, -60, 0);
 parked.control = { throttle: 0, brake: 1, steer: 0, handbrake: 1 };
 
 const controls = new Controls();

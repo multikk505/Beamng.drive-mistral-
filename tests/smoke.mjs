@@ -23,7 +23,28 @@ console.log('jazda: z =', car.nodes[0].p.z.toFixed(1), 'm, speed =', car.speed.t
 if (car.nodes[0].p.z < 30) { console.error('FAIL: auto nie jedzie naprzód'); process.exit(1); }
 if (yMin < -0.5) { console.error('FAIL: auto zapadło się pod grunt'); process.exit(1); }
 
-// 2) crash w ścianę z pełnym gazem
+// 1b) agresywna jazda (skrety, gaz, hamowanie) NIE MOŻE deformować auta
+//     – uszkodzenia tylko w wyniku kolizji
+car.reset();
+for (let i = 0; i < 600; i++) {
+  const t = i / 60;
+  car.control = {
+    throttle: Math.max(0, Math.sin(t * 2.1)),
+    brake: Math.max(0, Math.sin(t * 1.3 + Math.PI)),
+    steer: Math.sin(t * 1.7),
+    handbrake: (i % 180) < 30 ? 1 : 0,
+  };
+  car.step(1 / 60, [], null);
+  car.updateVisual(1 / 60);
+  if (!finite()) { console.error('FAIL: NaN przy agresywnej jeździe t=', i); process.exit(1); }
+}
+console.log('agresywna jazda: damage =', (car.damage * 100).toFixed(2) + '%');
+if (car.damage > 0.004) { console.error('FAIL: losowe uszkodzenia podczas jazdy'); process.exit(1); }
+
+// 2) crash w ścianę z pełnym gazem (od spawnu, prosto)
+car.reset();
+car.control = { throttle: 1, brake: 0, steer: 0, handbrake: 0 };
+for (let i = 0; i < 360; i++) { car.step(1 / 60, [], null); car.updateVisual(1 / 60); }
 const wall = {
   pos: new THREE.Vector3(0, 1.1, car.nodes[0].p.z + 12),
   quat: new THREE.Quaternion(),
